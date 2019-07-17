@@ -52,7 +52,6 @@ class Gingleator:
         self.pop_col = pop_col
         self.epsilon = epsilon
 
-
     ## init_minority_prec_col takes the string corresponding to the minority
     ## population column and the total population column attributes in the 
     ## partition updaters as well as the desired name of the minority percent 
@@ -65,24 +64,19 @@ class Gingleator:
         self.part.updaters.update(prec_up)
 
 
-    def short_burst_run(self, num_bursts, num_steps):
-        max_part = self.part
+    def short_burst_run(self, num_bursts, num_steps, verbose=False):
+        max_part = (self.part, self.score(self.part)) 
         observed_num_ops = np.zeros((num_bursts, num_steps))
 
         for i in range(num_bursts):
-            chain = config_markov_chain(max_part, iters=num_steps,
+            if verbose: print("Burst:", i)
+            chain = config_markov_chain(max_part[0], iters=num_steps,
                                         epsilon=self.epsilon, pop=self.pop_col)
-            burst_parts = []
 
-            for part in chain:
-                score = self.score(part, self.minority_prec, self.threshold)
-                burst_parts.append((part, score))
-
-            parts, num_ops = list(zip(*burst_parts))
-
-            observed_num_ops[i] = num_ops
-            max_i = np.argmax(num_ops)
-            max_part = parts[max_i]
+            for j, part in enumerate(chain):
+                part_score = self.score(part, self.minority_prec, self.threshold)
+                observed_num_ops[i][j] = part_score
+                max_part = (part, part_score) if part_score >= max_part[1] else max_part
     
         return (max_part, observed_num_ops)
 
