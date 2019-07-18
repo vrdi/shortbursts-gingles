@@ -65,7 +65,7 @@ class Gingleator:
 
 
     def short_burst_run(self, num_bursts, num_steps, verbose=False):
-        max_part = (self.part, self.score(self.part)) 
+        max_part = (self.part, self.score(self.part, self.minority_prec, self.threshold)) 
         observed_num_ops = np.zeros((num_bursts, num_steps))
 
         for i in range(num_bursts):
@@ -87,3 +87,29 @@ class Gingleator:
     def num_opportunity_dists(cls, part, minority_prec, threshold):
         dist_precs = part[minority_prec].values()
         return sum(list(map(lambda v: v >= threshold, dist_precs)))
+
+
+    ## For the passed partition num_opportunity_dists returns the number of
+    ## opportunity districts in the passed partitions + the percentage of the
+    ## next largest district.
+    @classmethod
+    def reward_partial_dist(cls, part, minority_prec, threshold):
+        dist_precs = part[minority_prec].values()
+        num_opport_dists = sum(list(map(lambda v: v >= threshold, dist_precs)))
+        next_dist = max(i for i in dist_precs if i < 0.4)
+        return num_opport_dists + next_dist
+
+
+    ## For the passed partition num_opportunity_dists returns the number of
+    ## opportunity districts in the passed partitions and adds the next largest
+    ## difference scaled if it is within 0.1 of the threshold.
+    @classmethod
+    def reward_next_highest_close(cls, part, minority_prec, threshold):
+        dist_precs = part[minority_prec].values()
+        num_opport_dists = sum(list(map(lambda v: v >= threshold, dist_precs)))
+        next_dist = max(i for i in dist_precs if i < threshold)
+
+        if next_dist < threshold - 0.1:
+            return num_opport_dists
+        else: 
+            return num_opport_dists + (next_dist - threshold + 0.1)*10
