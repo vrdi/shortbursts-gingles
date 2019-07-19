@@ -203,7 +203,7 @@ class Gingleator:
     @classmethod
     def penalize_maximum_over(cls, part, minority_prec, threshold):
         dist_precs = part[minority_prec].values()
-        num_opport_dists = sum(list(map(lambda v: v >= threshold, dist_precs)))
+        num_opportunity_dists = sum(list(map(lambda v: v >= threshold, dist_precs)))
         if num_opportunity_dists == 0:
             return 0
         else:
