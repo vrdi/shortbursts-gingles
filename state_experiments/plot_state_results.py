@@ -21,19 +21,14 @@ parser.add_argument("race_col", metavar="Race_column", type=str,
 args = parser.parse_args()
 
 
-num_h_districts = {"VA": 100, "TX": 150, "AR": 100, "CO": 65, "LA": 105, "NM": 70}
-pop_bal = {"CO": 2.0, "LA": 4.5, "NM": 4.5, "TX": 2.0, "VA": 2.0}
-
+## Configure State parameters
+num_h_districts = {"VA": 100, "TX": 150, "AR": 100, "CO": 65, "LA": 105, "NM": 70} ## Number of state House districts
+pop_bal = {"CO": 2.0, "LA": 4.5, "NM": 4.5, "TX": 2.0, "VA": 2.0}                  ## Population balance of runs
 
 ST = args.state
 NUM_DISTRICTS = num_h_districts[ST]
 MIN_COL = args.race_col
 iters = 100000
-# POP_COL = "TOTPOP"
-# N_SAMPS = 10
-
-# EPS = 0.045
-
 
 def foldl(func, acc, xs):
   return functools.reduce(func, xs, acc)
@@ -42,6 +37,16 @@ foldr = lambda func, acc, xs: functools.reduce(lambda x, y: func(y, x), xs[::-1]
 
 def get_state_runs(state, seats, iters=100000, pop_bal=2.0, min_col="nWVAP",
                    ls=[2,5,10,20,40,80], ps=[0.25, 0.125, 0.0625]):
+    """ Reads in short burst and biased run results. and returns dictionary of parameter and matrix of run results.
+        Args:
+          * state: str      -- abbreviation of state to pull data from
+          * seats: int      -- number of state House districts
+          * iters: int      -- number of steps (observed plans) in chain
+          * pop_bal: float  -- population balance of plans in chain
+          * min_col: str    -- column name of population to look at majority-minority districts for
+          * ls: int list    -- list of the burst lengths for the short burst runs
+          * ps: float list  -- list of acceptance probabilities of "worse preforming" plans for the biased runs
+    """
     results = {}
 
     for l in ls:
@@ -60,6 +65,11 @@ def get_state_runs(state, seats, iters=100000, pop_bal=2.0, min_col="nWVAP",
 
 
 def create_state_df(runs, iters=100000):
+  """ Create and return a dataframe from the run dictionary
+      Args:
+        * runs: dict -- dictionary of run results
+        * iters: int -- number of steps (observed plans) in chain
+  """
     df_st = pd.DataFrame()
     for l in runs.keys():
         for i in range(runs[l].shape[0]):
@@ -77,8 +87,6 @@ state_runs = get_state_runs(ST, NUM_DISTRICTS, ls=[2,5,10,25,50,100,200],
                               pop_bal=pop_bal[ST], min_col=MIN_COL)
 
 ## add unbiased results to state_runs
-
-
 ubs = glob.glob("data/sample_unbiased/{}_dists{}_{}%_100000_unbiased_*.npy".format(ST, NUM_DISTRICTS, pop_bal[ST]))
 ub_runs = {}
 for i, run in enumerate(ubs):
@@ -101,7 +109,6 @@ df_state = create_state_df(state_runs)
 
 
 ## Plot runs
-
 cmap_no_light = sns.color_palette(['#e6194b', '#3cb44b', '#ffe119', '#4363d8', 
                                    '#f58231', '#911eb4', '#46f0f0', '#f032e6', 
                                    '#808000', '#008080', '#9a6324', '#800000', 
@@ -112,11 +119,10 @@ plt.figure(figsize=(12,8))
 
 plt.title("{} State House ({} seats)".format(ST, NUM_DISTRICTS),fontsize=14)
 
-enacted = 28 # check number
-
-# axs[i].set_title(col)
 sns.lineplot(x="Step", y="Maximum", hue="param",style="run-type", palette=cmap_no_light,
              data=df_state, ci="sd", estimator='mean', alpha=0.75)
+
+# enacted = 28 # check number
 # plt.axhline(enacted, label="Enacted Plan", c="k", linestyle='dashdot')
 
 plt.ylabel("Expected Maximum number of {} gingles districts".format(MIN_COL),fontsize=12)
